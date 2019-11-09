@@ -12,7 +12,7 @@ request('https://api.the-odds-api.com/v3/odds?api_key=1420768311f2ce13ca7ead7ea3
                     
     global.oddsData = body;
 
-    if (err) { return console.log(err); } 
+    if (err) { return console.log("Request module to get API DATA failed:" + err); } 
                         
                     
 });
@@ -30,57 +30,7 @@ const hbs = expbs.create({
     //create custom helpers
     helpers: {
         
-        // CallAPI: function() {
-        //     async function getOdds () {
-        //         return new Promise(function(resolve, reject) {   
-        //             //METHOD 1 part a:     
-        //             // let response = await fetch("https://api.the-odds-api.com/v3/odds?api_key=1420768311f2ce13ca7ead7ea31c214d&sport=mma_mixed_martial_arts&region=uk", {                        
-        //             // });                    
-        //             // let APIData = await response.json(); //extract JSON from the http response         
-                                        
-        //             // return APIData;
-
-
-
-        //             // request('https://api.the-odds-api.com/v3/odds?api_key=1420768311f2ce13ca7ead7ea31c214d&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
-                    
-        //             // global.APIData = body;
-
-        //             // if (err) { return console.log(err); 
-                        
-                    
-        //             // }
-
-                               
-        //             resolve(body);
-
-        //             });
-        //         })
-        //     }           
-                                        
-        //     //METHOD 1 part b:
-        //     // getOdds()
-        //     // .then(APIData => hbs.helpers.CreateTableRows(APIData))       //getSetOddsData(APIData)                
-        //     // .catch(reason => console.log("CATCH: " + reason.message))
-
-            
-
-        //     async function test() {
-        //         global.testOddsData = await getOdds();                
-                  
-        //         //I will add the oddsData in as a parameter in due time but right now I need to just return basic <tr><th> etc etc for proof of concept
-        //         return hbs.helpers.CreateTableRows(); //global.testOddsData
-
-        //     }
-
-        //     //This method isn't working atm, I think because this gets returned straight away since its not an async function. Unsure if there is an easy work around I am
-        //     //overlooking or if what I am doing is even possible
-        //     return test();
-            
-
-            
-        // },
-
+        
         Sleep: function()   {
             
             var waitTill = new Date(new Date().getTime() + 5 * 1000);
