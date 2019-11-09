@@ -1,0 +1,24 @@
+
+
+
+{{!-- {{#with author as |value key|}}
+    <h2>My Name is {{value.firstName}} {{value.lastName}}</h2>
+
+    <p>My First Project was {{value.project.name}}</p>
+
+{{/with}} --}}
+
+
+
+
+{{!-- OR --}}
+
+
+
+
+{{#with author}}
+    <h2>My Name is {{firstName}} {{lastName}}</h2>
+
+    <p>My First Project was {{project.name}}</p>
+
+{{/with}}

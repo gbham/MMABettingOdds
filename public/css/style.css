@@ -1,0 +1,40 @@
+table, th, td {
+    border: 1px solid black;
+  }
+
+#oddsTable{
+    margin-left: auto;
+    margin-right: auto;
+    width:85%;
+}
+
+tr{
+    text-align: center;
+
+}
+
+/* body {
+    /* background: green; */
+/* } */ 
+
+
+
+#test, #test2{
+
+    background: orange;
+
+}
+
+
+
+#row0, #row2, #row4, #row6, #row8, #row10, #row12, #row14, #row16, #row18, #row20, #row22 {    
+    background: #C0C0C0;
+}
+
+/* the rows start at 0 */
+#row1, #row3, #row5, #row7, #row9, #row11, #row13, #row15, #row17, #row19, #row21, #row23 {    
+  
+    
+    background: #DCDCDC;
+
+}
