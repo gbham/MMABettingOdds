@@ -13,6 +13,12 @@ tr{
 
 }
 
+#headerRow{
+
+    background: rgb(134, 133, 133);    
+
+}
+
 #test, #test2{
 
     background: orange;

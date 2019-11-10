@@ -106,12 +106,12 @@ const hbs = expbs.create({
 
         WaitUntilAPIDataIsReturned: function()   {            
          
-        //     var waitTill = new Date(new Date().getTime() + 3 * 1000);
+        //     //var waitTill = new Date(new Date().getTime() + 3 * 1000);
         //    // while(global.oddsData==undefined || waitTill > new Date()){} //For some reason when I add in the "wait", the first part of the statement stops working?
                         
         //     do {   
         //         console.log("OUTSIDE: global.oddsData = " + global.oddsData);             
-        //         if(global.oddsData==undefined) 
+        //         if(global.oddsData!=undefined) 
         //         {    
 
         //             console.log("INSIDE: global.oddsData = " + global.oddsData);                     
@@ -124,20 +124,12 @@ const hbs = expbs.create({
 
 
 
-            
-
-
-
-
-
-
-
         },
 
         //Any fights greater than 3 weeks away are not shown
         GetNumberOfRowsToShow: function()   
         {
-            for(let i = 0; i < global.oddsData.data.length; i++)    //Start on 1 to avoid the heading of the table
+            for(let i = 0; i < global.oddsData.data.length; i++)    
             {  
                 const now = Math.round(Date.now() / 1000);
                 var timeToFight = global.oddsData.data[i].commence_time - now;
@@ -154,24 +146,22 @@ const hbs = expbs.create({
         {
             var counter = 0;
             var rowsToInsertHeadings = [];
-            for(let i = 0; i < global.oddsData.data.length -1 ; i++)    //Start on 1 to avoid the heading of the table
+            for(let i = 0; i < global.oddsData.data.length -1 ; i++)  
             {  
                 //Unix/Epoch time
                 var fightTimeA = global.oddsData.data[i].commence_time;
                 var fightTimeB = global.oddsData.data[i+1].commence_time;
                 var twelveHours = 43200;      
                 
-                 //Since the API data is ordered by time if a fight is more than 12 hours away from the next one in the array, then they belong to differnt fight cards
-                 if(fightTimeB - fightTimeA > twelveHours)
-                 {
-                    //Why we need the "+2" above. For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
-                    //This means we want (row[6]), the 7th row in the table, so we do i * 2 + 2 = row (e.g. 2 * 2 + 2 = 6) 
-                    rowsToInsertHeadings[counter] = i * 2 + 2;
-                    counter++;     
+                //Since the API data is ordered by time if a fight is more than 12 hours away from the next one in the array, then they belong to differnt fight cards
+                if(fightTimeB - fightTimeA > twelveHours)
+                {
+                //Why we need the "+2" above. For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
+                //This means we want (row[6]), the 7th row in the table, so we do i * 2 + 2 = row (e.g. 2 * 2 + 2 = 6) 
+                rowsToInsertHeadings[counter] = i * 2 + 2;
+                counter++;     
 
-                 }                              
-                
-                
+                }
             }
 
             return rowsToInsertHeadings;
@@ -183,75 +173,74 @@ const hbs = expbs.create({
 
 
 
-        CreateTableRows: function() { 
+        CreateTable: function() { 
 
-            //Not sure where is the best place to instantiate this but it is needed since I removed the 3rd paramter in "hbs.helpers.LookupOdds(i/2, column, teams)"
-            global.homeOrAway = 0;           
-           
-            console.log("inside CreateTableRows ");
-            //Keep in mind that if I try to use this rows array then the headers are not included
-            var rows = [];
-            var NoOfRows = hbs.helpers.GetNumberOfRowsToShow(); 
-            //Adding rows and the cells within
-            //Keep in mind that rows[0] is where the fighters names begin. The heading is not included in this count
-            for (let i=0; i<NoOfRows; i+=2)         
-            {   
-                //I only want to execute this code when 'i' is an even number so I can easily determine the corresponding of oddsData.data[] by dividing by 2              
-
-                //*********
-                //Fighter A
-                //*********                                                  
-                rows[i] = "<tr id=row" + i + ">";  
-                rows[i] += "<td>" + global.oddsData.data[i/2].teams[0] + "</td>";                
-                for (let column=1; column<10; column++) 
-                {                              
-                    rows[i] += "<td>" + hbs.helpers.LookupOdds(i/2, column) + "</td>";  //, 0                           
-                }
-                rows[i] += "</tr>";
-                
-
-
-                //*********
-                //Fighter B
-                //*********                                     
-                rows[i+1] = "<tr id=row" + (i+1) + ">";
-                rows[i+1] += "<td>" + global.oddsData.data[i/2].teams[1] + "</td>";                
-                for (let column=1; column<10; column++) 
-                {                              
-                    rows[i+1] += "<td>" + hbs.helpers.LookupOdds(i/2, column) + "</td>";   //, 1
-                }
-
-                rows[i+1] += "</tr>";
-
-
-                
-                
-            }   
+            console.log("inside CreateTable");                        
             
+            var rows = hbs.helpers.CreateRows();
+            var table = hbs.helpers.CreateTableFromRows(rows);    
+            
+            return table;           
+        },
+        
+        CreateRows: function() {  
+        //**NOTE: Keep in mind that rows[0] is where the fighters names/odds begin. The heading is not included in this count
 
-            var rowsToInsertHeadings = hbs.helpers.WhereToInsertHeadings();   
+            global.homeOrAway = 0;
+            var rows = [];
+            var fight;
+            var team = 0; 
+            var NoOfRows = hbs.helpers.GetNumberOfRowsToShow();             
+            
+            for (let i=0; i<NoOfRows; i++)  
+            {
+                if(i%2==0) 
+                {
+                    fight = i/2;
+                }
+                else 
+                {
+                    fight = (i-1)/2
+                }
+                                                                                  
+                rows[i] = "<tr id=row" + i + ">";                
+                rows[i] += "<td>" + global.oddsData.data[fight].teams[team] + "</td>";                
+                for (let column=1; column<10; column++) 
+                {                              
+                    rows[i] += "<td>" + hbs.helpers.LookupOdds(fight, column) + "</td>";                            
+                } 
+                rows[i] += "</tr>";                
+
+                if(team==0) {team=1} else {team=0};
+            }
+            
+            return rows;  
+    },
 
 
-            //Appending the rows to the final output that will create the table
-            //Need to keep in mind that the headings are not included in the rows[] array
-            let output =" ";
+        CreateTableFromRows: function(rows) {
+        //**NOTE: Keep in mind that rows[0] is where the fighters names/odds begin. The heading is not included in this count
+            
+            //Insert main header row
+            let table ="<tr id=headerRow><th>Fight Card Title</th><th>Unibet</th><th>Ladbrokes</th><th>Betfred</th><th>Betfair</th><th>PaddyPower</th><th>Sport888</th><th>Matchbook</th><th>Marathon</th><th>NordicBet</th></tr>";
+            
+            var rowsToInsertHeadings = hbs.helpers.WhereToInsertHeadings(); 
+
+            //Appending the rows to create the final table string            
             let counter = 0;
             for (let i=0; i<rows.length; i++) 
             {  
                 if(i==rowsToInsertHeadings[counter])
                 {   
-                    output += "<tr id=FightCardHeading><td>UFC 202: SMITH VS SMITH</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
+                    table += "<tr id=FightCardHeading><td>UFC 222: SMITH VS SMITH</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
                     counter++;
-                }
-                
-                output += rows[i];               
-               
-            }         
-            
-            return output;           
+                }                
+                table += rows[i];
+            }        
+
+            return table;
         },
-        
-       
+
         
         LookupOdds: function(fight, column) { //, teams
                          
