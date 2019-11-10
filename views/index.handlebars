@@ -1,6 +1,5 @@
 {{> header }}
 
-<h1>Hello caaaaaants</h1>
 
 
 <table id ="oddsTable"> 
@@ -16,13 +15,22 @@
         <th>Marathon</th>
         <th>NordicBet</th>
     </tr>
+    
+    
+    
+    {{!-- {{{Test}}}  --}}
+    {{!-- I am struggling to find a way to make the following code Wait until the API call is returned. 
+    Even if I add in a sleep, then it will continue executing this whole page before it will get the result of the API call --}}
+    
 
-    {{{WaitUntilAPIDataIsReturned}}}
+    {{!-- {{{Sleep}}} --}}
+
+    {{!-- {{{WaitUntilAPIDataIsReturned}}} --}}
+    
+    
+    {{{CreateTableRows}}}  
+
    
-    
-    {{{CreateTableRows}}}
-
-    
 
     
     
