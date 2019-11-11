@@ -113,7 +113,7 @@ const hbs = expbs.create({
 
 
         InputAPIDataIntoRows: function() {
-            //**NOTE: Keep in mind that rows[0] is where the fighters names/odds begin. The heading is not included in this count
+            //**NOTE: Keep in mind that rows[0] is where the fighters names/odds begin. The heading is not included in this array
 
             global.homeOrAway = 0;
             var team = 0; 
@@ -124,33 +124,37 @@ const hbs = expbs.create({
 
             for (let i=0; i<NoOfRows; i++)  
             {
-                if(i%2==0) 
-                {
-                    fight = i/2;                    
-                }
-                else 
-                {
-                    fight = (i-1)/2                    
-                }
-                
-                 
-                rows[i] = "<tr id=>";      //= "<tr id=row" + i + ">";             
-                rows[i] += "<td>" + global.oddsData.data[fight].teams[team] + "</td>";                
-                for (let column=1; column<10; column++) 
-                {                              
-                    rows[i] += "<td>" + hbs.helpers.LookupOdds(fight, column) + "</td>";                            
-                } 
-                rows[i] += "</tr>";                
+                if (i%2 == 0) {fight = i/2;} else {fight = (i-1)/2;}
 
-                if(team==0) {team=1} else {team=0};
+                rows[i] = hbs.helpers.CreateRow(fight, team);                
+                
+                if (team == 0) {team = 1} else {team = 0};
             }
 
             return rows;
         },
 
+        CreateRow: function(fight, team) {
+
+            //The id's are applied later since I need to reverse the order of each event
+            var row = "<tr id=>";              
+            row += "<td>" + global.oddsData.data[fight].teams[team] + "</td>";
+
+            for (let column=1; column<10; column++) 
+            {                              
+                row += "<td>" + hbs.helpers.LookupOdds(fight, column) + "</td>";                            
+            }
+
+            row += "</tr>";           
+
+            return row;
+        },
+
+
 
         //Any fights greater than 3 weeks away are not shown
         GetNumberOfRowsToShow: function() {
+
             for(let i = 0; i < global.oddsData.data.length; i++)    
             {  
                 const now = Math.round(Date.now() / 1000);
@@ -166,7 +170,17 @@ const hbs = expbs.create({
 
 
         LookupOdds: function(fight, column) { //, teams
-                         
+           
+            //Since the home and away fighters will be alternating between calling this function, I can determine which one is calling through this instead of sending 'teams' in as a paramter to the function
+            if(global.homeOrAway == 1)
+            {
+                global.homeOrAway = 0
+            }
+            else
+            {
+                global.homeOrAway = 1
+            }
+
             var columnNumber = [
                 "FILLER",
                 "unibet",
@@ -188,17 +202,7 @@ const hbs = expbs.create({
                     return global.oddsData.data[fight].sites[i].odds.h2h[homeOrAway];
                 }
             } 
-
-            //Since the home and away fighters will be alternating between calling this function, I can determine which one is calling through this instead of sending 'teams' in as a paramter to the function
-            if(global.homeOrAway == 0)
-            {
-                global.homeOrAway = 1
-            }
-            else
-            {
-                global.homeOrAway = 0
-            }
-
+            
         },
 
         //The order of the data from the API needs reversed
