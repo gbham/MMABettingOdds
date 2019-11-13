@@ -25,7 +25,7 @@ const hbs = expbs.create({
 
         },
 
-        Test: function()   {
+        CallAPI: function()   {
             console.log("API call made");           
         
             try{ 
@@ -43,7 +43,7 @@ const hbs = expbs.create({
             catch(err)
             {
                 console.log("ERROR - INSIDE THE CATCH FOR API CALL")                                
-                // hbs.helpers.Test(); //I believe in theory this should work. Not sure why it can't eventually recover, must be an underlying issue.
+                // hbs.helpers.CallAPI(); //I believe in theory this should work. Not sure why it can't eventually recover, must be an underlying issue.
                 
             }
            
@@ -101,8 +101,8 @@ const hbs = expbs.create({
                 //Since the API data is ordered by time if a fight is more than 12 hours away from the next one in the array, then they belong to differnt fight cards
                 if(fightTimeB - fightTimeA > twelveHours)
                 {
-                    //Why we need the "+2" above. For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
-                    //This means we want (row[6]), the 7th row in the table, so we do i * 2 + 2 = row (e.g. 2 * 2 + 2 = 6) 
+                    //Why we need the "+2". For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
+                    //This means we want (row[6]), so we do i * 2 + 2 = row (e.g. 2 * 2 + 2 = 6) 
                     rowsToInsertHeadings[counter] = i * 2 + 2;
                     counter++; 
                 }
@@ -137,13 +137,13 @@ const hbs = expbs.create({
         CreateRow: function(fight, team) {
 
             //The id's are applied later since I need to reverse the order of each event
-            var row = "<tr id=>";              
-            row += "<td>" + global.oddsData.data[fight].teams[team] + "</td>";
+            var row = "<tr id=>";
 
-            for (let column=1; column<10; column++) 
-            {                              
-                row += "<td>" + hbs.helpers.LookupOdds(fight, column) + "</td>";                            
-            }
+                row += "<td>" + global.oddsData.data[fight].teams[team] + "</td>";
+                for (let column=1; column<10; column++) 
+                {                              
+                    row += "<td>" + hbs.helpers.LookupOdds(fight, column) + "</td>";                            
+                }
 
             row += "</tr>";           
 
@@ -202,57 +202,78 @@ const hbs = expbs.create({
                     return global.oddsData.data[fight].sites[i].odds.h2h[homeOrAway];
                 }
             } 
-            
+
         },
 
-        //The order of the data from the API needs reversed
+        //The order of the data from the API needs reversed due to the way it is stored
         ReverseOrderOfFightsPerEvent: function(rows, rowsToInsertHeadings) {
 
+            var events = hbs.helpers.ExtractIndividualEvents(rows, rowsToInsertHeadings);
+            
+            var eventOne = events[0];
+            var eventTwo = events[1];
+            var eventThree = events[2];            
+
+            eventOne.reverse();
+            eventTwo.reverse();
+            eventThree.reverse();
+
+            rows = hbs.helpers.CombineOrderedEvents(rows, eventOne, eventTwo, eventThree);         
+
+            return rows;
+        },
+
+        ExtractIndividualEvents: function(rows, rowsToInsertHeadings)  {
+
             //May need an EventFour at some point
-            var EventOne = [];
-            var EventTwo = [];
-            var EventThree = [];
+            var eventOne = [];
+            var eventTwo = [];
+            var eventThree = [];
 
             for(let i=0; i<rows.length; i++)
             {
-                if(i<rowsToInsertHeadings[0])
+                if(i < rowsToInsertHeadings[0])
                 {
-                    EventOne[i] = rows[i];
+                    eventOne[i] = rows[i];
                 }
-                else if (i>=rowsToInsertHeadings[0] && i<rowsToInsertHeadings[1])
+                else if (i >= rowsToInsertHeadings[0] && i < rowsToInsertHeadings[1])
                 {
-                    EventTwo[i] = rows[i];
+                    eventTwo[i] = rows[i];
                 }
-                else if (i>=rowsToInsertHeadings[1] && i<rowsToInsertHeadings[2])
+                else if (i >= rowsToInsertHeadings[1] && i < rowsToInsertHeadings[2])
                 {
-                    EventThree[i] = rows[i];
+                    eventThree[i] = rows[i];
                 }
             }
 
-            EventOne.reverse();
-            EventTwo.reverse();
-            EventThree.reverse();            
-            
+            var events = [eventOne, eventTwo, eventThree];
+
+            return events;
+
+
+        },
+
+        CombineOrderedEvents: function(rows, eventOne, eventTwo, eventThree)  {
+
             for(let i=0; i<rows.length; i++)
             {
-                if(i<EventOne.length)                
+                if(i < eventOne.length)                
                 {
-                    rows[i] = EventOne[i];
+                    rows[i] = eventOne[i];
                 }
-                else if (i<EventTwo.length)
+                else if (i < eventTwo.length)
                 {
-                    rows[i] = EventTwo[i];
+                    rows[i] = eventTwo[i];
                 }
-                else if (i<EventThree.length) 
+                else if (i < eventThree.length) 
                 {
-                    rows[i] = EventThree[i];
+                    rows[i] = eventThree[i];
                 }
             }
 
             return rows;
-
         },
-
+     
 
         AssignRowIDs: function(rows)  {
             
@@ -288,64 +309,27 @@ const hbs = expbs.create({
         },
 
 
-        
-
-        
-
-
-        
-        
-
-        
-
-       
-
-
-        
-
-
-        
-        
-        
-        
-
-        
-        
-
-
-
-
-        
-
-
     }
 });
 
 
 
-hbs.helpers.Test();
 
-
+hbs.helpers.CallAPI();
 
 
 // view engine setup
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
-
  
 
 app.get('/', (req, res) => {
     res.render('index.handlebars', { 
         title: 'Home Page',
-        name: 'greg', 
-        isCompleted: false,
         style: 'style.css',
                          
     });
 });
-
-
-
 
 
 
