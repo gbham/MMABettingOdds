@@ -1,5 +1,6 @@
 table, th, td {
-    border: 1px solid black;
+    /* border: 1px solid black; */
+    border: 1px solid #ddd !important;
   }
 
 #oddsTable{
@@ -12,6 +13,10 @@ tr{
     text-align: center;
 
 }
+
+/* .table-bordered {
+    border: 1px solid #ddd !important;
+  } */
 
 #headerRow{
 

@@ -131,6 +131,9 @@ const hbs = expbs.create({
                 if (team == 0) {team = 1} else {team = 0};
             }
 
+            
+
+
             return rows;
         },
 
@@ -159,11 +162,11 @@ const hbs = expbs.create({
             {  
                 const now = Math.round(Date.now() / 1000);
                 var timeToFight = global.oddsData.data[i].commence_time - now;
-                var threeWeeks = "1814400";                            
-                
+                var threeWeeks = "1814400";  
+
                 if(timeToFight > threeWeeks)
-                {                    
-                    return i*2;                    
+                {    
+                    return i * 2;                    
                 }                    
             }
         },
@@ -212,8 +215,8 @@ const hbs = expbs.create({
             
             var eventOne = events[0];
             var eventTwo = events[1];
-            var eventThree = events[2];            
-
+            var eventThree = events[2];   
+       
             eventOne.reverse();
             eventTwo.reverse();
             eventThree.reverse();
@@ -230,6 +233,9 @@ const hbs = expbs.create({
             var eventTwo = [];
             var eventThree = [];
 
+            let eventTwoCounter = 0;
+            let eventThreeCounter = 0;
+
             for(let i=0; i<rows.length; i++)
             {
                 if(i < rowsToInsertHeadings[0])
@@ -238,11 +244,13 @@ const hbs = expbs.create({
                 }
                 else if (i >= rowsToInsertHeadings[0] && i < rowsToInsertHeadings[1])
                 {
-                    eventTwo[i] = rows[i];
+                    eventTwo[eventTwoCounter] = rows[i];
+                    eventTwoCounter++;
                 }
                 else if (i >= rowsToInsertHeadings[1] && i < rowsToInsertHeadings[2])
                 {
-                    eventThree[i] = rows[i];
+                    eventThree[eventThreeCounter] = rows[i];
+                    eventThreeCounter++;
                 }
             }
 
@@ -255,19 +263,24 @@ const hbs = expbs.create({
 
         CombineOrderedEvents: function(rows, eventOne, eventTwo, eventThree)  {
 
+            let eventTwoCounter = 0;
+            let eventThreeCounter = 0;
+            
             for(let i=0; i<rows.length; i++)
             {
                 if(i < eventOne.length)                
                 {
                     rows[i] = eventOne[i];
                 }
-                else if (i < eventTwo.length)
+                else if (i < eventOne.length + eventTwo.length)     
                 {
-                    rows[i] = eventTwo[i];
+                    rows[i] = eventTwo[eventTwoCounter];
+                    eventTwoCounter++;
                 }
-                else if (i < eventThree.length) 
+                else if (i < eventOne.length + eventTwo.length + eventThree.length) 
                 {
-                    rows[i] = eventThree[i];
+                    rows[i] = eventThree[eventThreeCounter];
+                    eventThreeCounter++;
                 }
             }
 
@@ -277,7 +290,7 @@ const hbs = expbs.create({
 
         AssignRowIDs: function(rows)  {
             
-            for(let i=0; i<rows.length; i++)
+            for(let i=0; i < rows.length; i++)
             {                
                 rows[i] = rows[i].substring(0,7) + "row" + i + rows[i].substring(7)
 
@@ -293,10 +306,12 @@ const hbs = expbs.create({
                 //Insert main header row
                 let table ="<tr id=headerRow><th>Fight Card Title</th><th>Unibet</th><th>Ladbrokes</th><th>Betfred</th><th>Betfair</th><th>PaddyPower</th><th>Sport888</th><th>Matchbook</th><th>Marathon</th><th>NordicBet</th></tr>";
                     
+               
                 //Appending the rows to create the final table string            
                 let counter = 0;
                 for (let i=0; i<rows.length; i++) 
-                {  
+                { 
+                    
                     if(i==rowsToInsertHeadings[counter])
                     {   
                         table += "<tr id=FightCardHeading><td>UFC 222: SMITH VS SMITH</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
@@ -305,6 +320,7 @@ const hbs = expbs.create({
                     table += rows[i];
                 }        
     
+
                 return table;
         },
 
