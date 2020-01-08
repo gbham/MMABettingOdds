@@ -51,7 +51,7 @@ const hbs = expbs.create({
 
         CreateTable: function() { 
 
-            var rowsToInsertHeadings = hbs.helpers.WhereToInsertEventHeadings();
+            var rowsToInsertHeadings = hbs.helpers.GetWhereToInsertEventHeadings();
 
             var rows = hbs.helpers.InputAPIDataIntoRows();       
 
@@ -87,18 +87,20 @@ const hbs = expbs.create({
 
         },
 
-
-        WhereToInsertEventHeadings: function() {
+        
+        //This function loops through the API data, that is ordered by time and checks for a gap of more than 12 hours between two fights
+        //When a gap of 12 hours is found then I know those fights belong to different events and a heading needs to go in the current position
+        GetWhereToInsertEventHeadings: function() {
             var counter = 0;
             var rowsToInsertHeadings = [];
+
             for(let i = 0; i < global.oddsData.data.length -1 ; i++)  
             {  
                 //Unix/Epoch time
                 var fightTimeA = global.oddsData.data[i].commence_time;
                 var fightTimeB = global.oddsData.data[i+1].commence_time;
-                var twelveHours = 43200;      
+                var twelveHours = 43200;
                 
-                //Since the API data is ordered by time if a fight is more than 12 hours away from the next one in the array, then they belong to differnt fight cards
                 if(fightTimeB - fightTimeA > twelveHours)
                 {
                     //Why we need the "+2". For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
@@ -112,21 +114,24 @@ const hbs = expbs.create({
         },
 
 
+        //This function determines how many rows to show and then creates the row
         InputAPIDataIntoRows: function() {
             //**NOTE: Keep in mind that rows[0] is where the fighters names/odds begin. The heading is not included in this array
 
             global.homeOrAway = 0;
             var team = 0; 
             var rows = [];
-            var fight;
+            var fightNumber;
                         
             var NoOfRows = hbs.helpers.GetNumberOfRowsToShow();        
 
-            for (let i=0; i<NoOfRows; i++)  
-            {
-                if (i%2 == 0) {fight = i/2;} else {fight = (i-1)/2;}
 
-                rows[i] = hbs.helpers.CreateRow(fight, team);                
+            for (let i=0; i<NoOfRows; i++)  
+            {   
+                //I can divide an even row by 2 to get the corresponding position in the API data array then I just alternate between fighter A and Fighter B with 'team'          
+                if (i%2 == 0) {fightNumber = i/2;} else {fightNumber = (i-1)/2;}
+
+                rows[i] = hbs.helpers.CreateRow(fightNumber, team);                
                 
                 if (team == 0) {team = 1} else {team = 0};
             }
@@ -137,15 +142,16 @@ const hbs = expbs.create({
             return rows;
         },
 
-        CreateRow: function(fight, team) {
+        //Creates a row, looks up the relevant name for the fight provided then lookups all the corresponding odds 
+        CreateRow: function(fightNumber, team) {
 
             //The id's are applied later since I need to reverse the order of each event
             var row = "<tr id=>";
 
-                row += "<td>" + global.oddsData.data[fight].teams[team] + "</td>";
+                row += "<td>" + global.oddsData.data[fightNumber].teams[team] + "</td>";
                 for (let column=1; column<10; column++) 
                 {                              
-                    row += "<td>" + hbs.helpers.LookupOdds(fight, column) + "</td>";                            
+                    row += "<td>" + hbs.helpers.LookupOdds(fightNumber, column) + "</td>";                            
                 }
 
             row += "</tr>";           
@@ -164,14 +170,17 @@ const hbs = expbs.create({
                 var timeToFight = global.oddsData.data[i].commence_time - now;
                 var threeWeeks = "1814400";  
 
+                //Once I find a fight in the API data array that is more than 3 weeks away I times that index by 2 and send back the number of rows
                 if(timeToFight > threeWeeks)
-                {    
+                {   
                     return i * 2;                    
                 }                    
             }
         },
 
 
+        //This function looksup the value of the corresponding odds for a certain fighter and bookmaker
+        //Since each bookmaker is a column, I 
         LookupOdds: function(fight, column) { //, teams
            
             //Since the home and away fighters will be alternating between calling this function, I can determine which one is calling through this instead of sending 'teams' in as a paramter to the function
@@ -184,7 +193,7 @@ const hbs = expbs.create({
                 global.homeOrAway = 1
             }
 
-            var columnNumber = [
+            var siteKey = [
                 "FILLER",
                 "unibet",
                 "ladbrokes",
@@ -197,10 +206,10 @@ const hbs = expbs.create({
                 "nordicbet"                
             ]
         
-            //Since the function knows what column you are in, it can find out what bookmakers odds should be returned
+            //Since the function knows what column you are in, it can find out what bookmakers odds should be returned by looping until it matches with the desired 'site_key'
             for(let i = 0; i < global.oddsData.data[fight].sites.length; i++)
             {   
-                if(global.oddsData.data[fight].sites[i].site_key == columnNumber[column])
+                if(global.oddsData.data[fight].sites[i].site_key == siteKey[column])
                 {                    
                     return global.oddsData.data[fight].sites[i].odds.h2h[homeOrAway];
                 }
@@ -208,7 +217,7 @@ const hbs = expbs.create({
 
         },
 
-        //The order of the data from the API needs reversed due to the way it is stored
+        //The order of the data from the API needs reversed due to the way it is stored (EDIT: This doesnt appear to work after the first event)
         ReverseOrderOfFightsPerEvent: function(rows, rowsToInsertHeadings) {
 
             var events = hbs.helpers.ExtractIndividualEvents(rows, rowsToInsertHeadings);
@@ -287,7 +296,7 @@ const hbs = expbs.create({
             return rows;
         },
      
-
+        //The rows are now in the correct order (hopefully). Since I know every row starts with "<tr id=" I can now add in the appropiate row number with substring 
         AssignRowIDs: function(rows)  {
             
             for(let i=0; i < rows.length; i++)
