@@ -10,12 +10,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "canvas": "^2.6.1",
     "express": "^4.17.1",
     "express-handlebars": "^3.1.0",
+    "geckodriver": "^1.19.1",
     "git": "^0.1.5",
     "jsdom": "^15.2.0",
     "node-fetch": "^2.6.0",
     "request": "^2.88.0",
+    "selenium-webdriver": "^4.0.0-alpha.5",
     "wait-until": "0.0.2"
   }
 }

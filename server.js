@@ -6,6 +6,9 @@ const path = require('path');
 const waitUntil = require('wait-until');
 const request = require('request');
 
+const {Builder, By, Key, until} = require('selenium-webdriver');
+const chrome = require('selenium-webdriver/chrome');
+
 
 app.use(express.static('public'));
 
@@ -28,26 +31,57 @@ const hbs = expbs.create({
         CallAPI: function()   {
             console.log("API call made");           
         
-            try{ 
-                
-                request('https://api.the-odds-api.com/v3/odds?api_key=41ca42613c3990833519f5b8a2b892e8&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
+
+            (async function SendRequest() {                
+                try {
+                    await request('https://api.the-odds-api.com/v3/odds?api_key=41ca42613c3990833519f5b8a2b892e8&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
                             
-                    global.oddsData = body;
-                    console.log("Just assinged global.oddsData");
-                
-                    if (err) { return console.log("Request module to get API DATA failed:" + err); }                             
-                                
-                });               
-              
-            }
-            catch(err)
-            {
-                console.log("ERROR - INSIDE THE CATCH FOR API CALL")                                
-                // hbs.helpers.CallAPI(); //I believe in theory this should work. Not sure why it can't eventually recover, must be an underlying issue.
-                
-            }
+                        global.oddsData = body;
+                        console.log("Just assinged global.oddsData");
+                    
+                        if (err) { return console.log("Request module to get API DATA failed:" + err); }                             
+                                    
+                    });               
+                  
+                }                 
+                catch(err)
+                {
+                    console.log("ERROR - INSIDE THE CATCH FOR API CALL")                                
+                    
+                    
+                }
+                 finally {
+                  //await driver.quit();
+                }
+              })();
+
+
+
            
         },
+
+
+        TestSelenium: function () {
+
+
+            (async function example() {
+                let driver = await new Builder().forBrowser('chrome').build();
+                try {
+                    //await driver.get('https://www.google.com/');
+                  await driver.get('http://localhost:8080/');
+                  //await console.log(driver.findElement(By.css('#row4 > td:nth-child(5)')).getText());
+                  
+                } finally {
+                  await driver.quit();
+                }
+              })();
+
+
+
+
+        },
+
+
 
         CreateTable: function() { 
 
@@ -142,7 +176,7 @@ const hbs = expbs.create({
             return rows;
         },
 
-        //Creates a row, looks up the relevant name for the fight provided then lookups all the corresponding odds 
+        //Creates a row, looks up the relevant name for the fighter provided then lookups all the corresponding odds 
         CreateRow: function(fightNumber, team) {
 
             //The id's are applied later since I need to reverse the order of each event
@@ -341,6 +375,7 @@ const hbs = expbs.create({
 
 
 hbs.helpers.CallAPI();
+hbs.helpers.TestSelenium();
 
 
 // view engine setup
