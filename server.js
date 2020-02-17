@@ -3,8 +3,11 @@ var app = express();
 const expbs  = require('express-handlebars');
 const handlebars = require('handlebars');
 const path = require('path');
-const waitUntil = require('wait-until');
+const waitUntil = require('async-wait-until');
 const request = require('request');
+const axios = require("axios");
+const cheerio = require("cheerio");
+
 
 const {Builder, By, Key, until} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
@@ -23,15 +26,17 @@ const hbs = expbs.create({
         
         
         Sleep: function()   {  
-            var waitTill = new Date(new Date().getTime() + 4 * 1000);            
+
+            console.log("Sleep started");
+            var waitTill = new Date(new Date().getTime() + 10 * 1000);            
             while(waitTill > new Date()){}
 
         },
 
+        //I do not think this function is needed anymore within the 'hbs.helpers', keep for a while just in case
         CallAPI: function()   {
             console.log("API call made");           
         
-
             (async function SendRequest() {                
                 try {
                     await request('https://api.the-odds-api.com/v3/odds?api_key=41ca42613c3990833519f5b8a2b892e8&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
@@ -54,9 +59,6 @@ const hbs = expbs.create({
                   //await driver.quit();
                 }
               })();
-
-
-
            
         },
 
@@ -85,17 +87,27 @@ const hbs = expbs.create({
 
         CreateTable: function() { 
 
-            var rowsToInsertHeadings = hbs.helpers.GetWhereToInsertEventHeadings();
+            try {
+                var rowsToInsertHeadings = hbs.helpers.GetWhereToInsertEventHeadings();
 
-            var rows = hbs.helpers.InputAPIDataIntoRows();       
+                var rows = hbs.helpers.InputAPIDataIntoRows();       
+    
+                rows = hbs.helpers.ReverseOrderOfFightsPerEvent(rows, rowsToInsertHeadings);
+    
+                rows = hbs.helpers.AssignRowIDs(rows);
+    
+                var table = hbs.helpers.InsertEventHeadings(rows, rowsToInsertHeadings);    
+                
+                return table;  
 
-            rows = hbs.helpers.ReverseOrderOfFightsPerEvent(rows, rowsToInsertHeadings);
-
-            rows = hbs.helpers.AssignRowIDs(rows);
-
-            var table = hbs.helpers.InsertEventHeadings(rows, rowsToInsertHeadings);    
-            
-            return table;
+            }
+            catch(err)
+            {
+                console.log("Main try/catch in CreateTable() failed")
+                //HERE MAKE A MESSAGE SAYING PLEASE REFRESH THE PAGE OR SOMETHING LIKE THAT
+            }
+                     
+        
            
         },
        
@@ -128,13 +140,14 @@ const hbs = expbs.create({
             var counter = 0;
             var rowsToInsertHeadings = [];
 
+            
             for(let i = 0; i < global.oddsData.data.length -1 ; i++)  
             {  
                 //Unix/Epoch time
                 var fightTimeA = global.oddsData.data[i].commence_time;
                 var fightTimeB = global.oddsData.data[i+1].commence_time;
                 var twelveHours = 43200;
-                
+            
                 if(fightTimeB - fightTimeA > twelveHours)
                 {
                     //Why we need the "+2". For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
@@ -143,6 +156,9 @@ const hbs = expbs.create({
                     counter++; 
                 }
             }
+            
+
+            
 
             return rowsToInsertHeadings;
         },
@@ -185,7 +201,7 @@ const hbs = expbs.create({
                 row += "<td>" + global.oddsData.data[fightNumber].teams[team] + "</td>";
                 for (let column=1; column<10; column++) 
                 {                              
-                    row += "<td>" + hbs.helpers.LookupOdds(fightNumber, column) + "</td>";                            
+                    row += "<td>" + LookupOdds(fightNumber, column) + "</td>";                            
                 }
 
             row += "</tr>";           
@@ -374,8 +390,9 @@ const hbs = expbs.create({
 
 
 
-hbs.helpers.CallAPI();
-hbs.helpers.TestSelenium();
+getOddsFunction();  // or SendRequest();
+
+
 
 
 // view engine setup
@@ -383,7 +400,55 @@ app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
  
 
-app.get('/', (req, res) => {
+//Look into what can be/is normally done with this "req" parameter, could be overlooking some important functionality.
+app.get('/', async function (req, res) {    //Remember I made this an async function, not sure what else that can affect
+
+
+    // FUCK THE AWAITS, COME BACK TO THIS SHIT. FOCUS ON WEB SCRAPING A LIST OF UFC EVENTS (IN ORDER) THEN APPLY THEM TO THE ROWS WITH HEADINGS ID
+    // ALSO, I BELIEVE ONLY "CREATETABLE()" NEEDS TO BE A HBS.HELPER SINCE THAT IS GETTING CALLED FROM WITHIN INDEX.HANDLEBARS. I think I can make all the other hbs.helper functions,
+    // just normal functions. this should meen I can keep them in differnt files too and just "Require" them at the top (or something similar) e.g "const express = require('express');""
+    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // do some sort of wait until here, i may run into the same problem but I think it will work and there is defo a way to get my end goal
+    // if(global.oddsData is not null then go)
+    //https://stackoverflow.com/questions/31543396/mongodb-express-handlebars-have-res-render-wait-until-after-data-is-pulled
+    // https://www.geeksforgeeks.org/using-async-await-in-node-js/ - I feel like I done what is listed in this link but still not working
+
+
+    
+    getOddsFunction(); // or SendRequest();
+    
+
+    const $ = await scrapeWebpageForEventTitles();
+
+
+    var regExFightNightByFightersNames = new RegExp(/UFC Fight Night: \w* vs. \w*/, 'g');
+    var regExFightNightByNumbers = new RegExp(/UFC Fight Night \d{3}/, 'g');    //keep an eye on if other event titles in this format sometimes have an ":"
+    var regExPPVWithNames = new RegExp(/UFC \d{3}: \w* vs. \w*/, 'g');  
+
+    //Figure out why this regEx below isnt acting as expected. If it takes too long then just trim "\n\n" from the string returned.
+    //Adding this fcking "[^\\n]" below, ADDS ANOTHER ONE to the returned string? what in the fck
+    var regExPPV = new RegExp(/UFC \d{3}[^:][^\\n]/, 'g');    //:"?" - If the wiki always presents "UFC 250" as this, and not sometimes "UFC 250:", then this regEx is suitable
+    // var regExPPV = new RegExp(/UFC \d{3}[^:]/, 'g');
+    
+
+
+    const body = $('#Scheduled_events > tbody').text()
+    // console.log(txt);
+    // console.log("--------------------------------");
+    
+    var FightNightByNames = body.match(regExFightNightByFightersNames);
+    var FightNightByNumbers = body.match(regExFightNightByNumbers);
+    var regExPPVWithNames = body.match(regExPPVWithNames);
+    var regExPPV = body.match(regExPPV);
+
+    
+    console.log(FightNightByNames);
+    console.log(FightNightByNumbers);
+    console.log(regExPPVWithNames);
+    console.log(regExPPV);
+
+
     res.render('index.handlebars', { 
         title: 'Home Page',
         style: 'style.css',
@@ -397,3 +462,102 @@ app.listen(8080, () => {
   console.log('Server is starting at port ', 8080);
 });
 
+
+
+const scrapeWebpageForEventTitles = async () => {
+    
+    const siteUrl = "https://en.wikipedia.org/wiki/List_of_UFC_events";  
+    const result = await axios.get(siteUrl);
+        return cheerio.load(result.data);
+
+};
+
+
+
+
+
+//Unsure what method is better for getting the odds - I have the option of 2 below. From first impressions number 1 seems faster.
+// 1.
+function getOddsFunction () {
+    
+    return new Promise(resolve => {
+        resolve(request('https://api.the-odds-api.com/v3/odds?api_key=41ca42613c3990833519f5b8a2b892e8&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
+            
+            console.log("inside await request");
+            global.oddsData = body;
+    
+            console.log("Just assinged global.oddsData");
+        
+            if (err) { return console.log("Request module to get API DATA failed:" + err); }                             
+                        
+        })             )
+
+
+    })
+    
+}
+
+//Unsure what method is better for getting the odds - I have the option of 2 below. From first impressions number 1 seems faster.
+// 2.
+
+// async function SendRequest() {                
+//     try {
+//         await request('https://api.the-odds-api.com/v3/odds?api_key=41ca42613c3990833519f5b8a2b892e8&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
+               
+//             console.log("inside await request");
+//             global.oddsData = body;
+//             console.log("Just assinged global.oddsData");
+        
+//             if (err) { return console.log("Request module to get API DATA failed:" + err); }                             
+                        
+//         });               
+      
+//     }                 
+//     catch(err)
+//     {
+//         console.log("ERROR - INSIDE THE CATCH FOR API CALL" + err)  
+//     }
+//      finally {
+      
+//     }
+//   }
+
+
+
+
+
+     function LookupOdds(fight, column) { //, teams
+           
+        //Since the home and away fighters will be alternating between calling this function, I can determine which one is calling through this instead of sending 'teams' in as a paramter to the function
+        if(global.homeOrAway == 1)
+        {
+            global.homeOrAway = 0
+        }
+        else
+        {
+            global.homeOrAway = 1
+        }
+
+        var siteKey = [
+            "FILLER",
+            "unibet",
+            "ladbrokes",
+            "betfred",
+            "betfair",
+            "paddypower",
+            "sport888",
+            "matchbook",
+            "marathonbet",
+            "nordicbet"                
+        ]
+    
+        //Since the function knows what column you are in, it can find out what bookmakers odds should be returned by looping until it matches with the desired 'site_key'
+        for(let i = 0; i < global.oddsData.data[fight].sites.length; i++)
+        {   
+            if(global.oddsData.data[fight].sites[i].site_key == siteKey[column])
+            {                    
+                return global.oddsData.data[fight].sites[i].odds.h2h[homeOrAway];
+            }
+        } 
+
+    }
