@@ -51,9 +51,7 @@ const hbs = expbs.create({
                 }                 
                 catch(err)
                 {
-                    console.log("ERROR - INSIDE THE CATCH FOR API CALL")                                
-                    
-                    
+                    console.log("ERROR - INSIDE THE CATCH FOR API CALL")
                 }
                  finally {
                   //await driver.quit();
@@ -138,7 +136,7 @@ const hbs = expbs.create({
         //When a gap of 12 hours is found then I know those fights belong to different events and a heading needs to go in the current position
         GetWhereToInsertEventHeadings: function() {
             var counter = 0;
-            var rowsToInsertHeadings = [];
+            var rowsToInsertHeadings = [];      
 
             
             for(let i = 0; i < global.oddsData.data.length -1 ; i++)  
@@ -360,30 +358,26 @@ const hbs = expbs.create({
         },
 
         InsertEventHeadings: function(rows, rowsToInsertHeadings)  {
-            //**NOTE: Keep in mind that rows[0] is where the fighters names/odds begin. The heading is not included in this count
-                
-                //Insert main header row
-                let table ="<tr id=headerRow><th>Fight Card Title</th><th>Unibet</th><th>Ladbrokes</th><th>Betfred</th><th>Betfair</th><th>PaddyPower</th><th>Sport888</th><th>Matchbook</th><th>Marathon</th><th>NordicBet</th></tr>";
-                    
-               
-                //Appending the rows to create the final table string            
+            //**NOTE: Keep in mind that the parameter rows[0] is where the fighters names/odds begin. The heading is not included in this current variable
+                 
+                //Appending the header rows and fighter rows to create the final table string
+                let table = "<tr id=headerRow><th>" + global.UFCEventNames[0] + "</th><th>Unibet</th><th>Ladbrokes</th><th>Betfred</th><th>Betfair</th><th>PaddyPower</th><th>Sport888</th><th>Matchbook</th><th>Marathon</th><th>NordicBet</th></tr>";            
                 let counter = 0;
+                let eventNumber = 1;
+
                 for (let i=0; i<rows.length; i++) 
-                { 
-                    
+                {   
                     if(i==rowsToInsertHeadings[counter])
                     {   
-                        table += "<tr id=FightCardHeading><td>UFC 222: SMITH VS SMITH</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
+                        table += "<tr id=FightCardHeading><td>" + global.UFCEventNames[eventNumber] + "</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>";
                         counter++;
+                        eventNumber++;
                     }                
                     table += rows[i];
-                }        
-    
+                }
 
                 return table;
         },
-
-
     }
 });
 
@@ -422,32 +416,17 @@ app.get('/', async function (req, res) {    //Remember I made this an async func
     const $ = await scrapeWebpageForEventTitles();
 
 
-    var regExFightNightByFightersNames = new RegExp(/UFC Fight Night: \w* vs. \w*/, 'g');
-    var regExFightNightByNumbers = new RegExp(/UFC Fight Night \d{3}/, 'g');    //keep an eye on if other event titles in this format sometimes have an ":"
-    var regExPPVWithNames = new RegExp(/UFC \d{3}: \w* vs. \w*/, 'g');  
-
-    //Figure out why this regEx below isnt acting as expected. If it takes too long then just trim "\n\n" from the string returned.
-    //Adding this fcking "[^\\n]" below, ADDS ANOTHER ONE to the returned string? what in the fck
-    var regExPPV = new RegExp(/UFC \d{3}[^:][^\\n]/, 'g');    //:"?" - If the wiki always presents "UFC 250" as this, and not sometimes "UFC 250:", then this regEx is suitable
-    // var regExPPV = new RegExp(/UFC \d{3}[^:]/, 'g');
+    // var regExFightNightWithFightersNames = new RegExp(/UFC Fight Night: \w* vs. \w*/, 'g');
+    // var regExUfcOnESPN = new RegExp(/UFC on ESPN: \w* vs. \w*/, 'g');    
+    // var regExPPVWithNames = new RegExp(/UFC \d{3}: \w* vs. \w*/, 'g');       
     
-
-
-    const body = $('#Scheduled_events > tbody').text()
-    // console.log(txt);
-    // console.log("--------------------------------");
+    const body = $('#Scheduled_events > tbody').text()    
     
-    var FightNightByNames = body.match(regExFightNightByFightersNames);
-    var FightNightByNumbers = body.match(regExFightNightByNumbers);
-    var regExPPVWithNames = body.match(regExPPVWithNames);
-    var regExPPV = body.match(regExPPV);
-
+    var regExAllUFCEvents = new RegExp(/UFC .*: \w* vs. \w*/, 'g');
+    var Events = body.match(regExAllUFCEvents); 
+    Events.reverse(); 
     
-    console.log(FightNightByNames);
-    console.log(FightNightByNumbers);
-    console.log(regExPPVWithNames);
-    console.log(regExPPV);
-
+    global.UFCEventNames = Events;    
 
     res.render('index.handlebars', { 
         title: 'Home Page',
@@ -472,6 +451,17 @@ const scrapeWebpageForEventTitles = async () => {
 
 };
 
+//Probs remove this if no longer needed
+//A foreach statement didnt work, not sure if I was doing something wrong but the changes made werent persisting
+//Removing white space from the end.
+function RemoveNewlineCharacters(UFCEventName) {
+
+    for(var i = 0; i < UFCEventName.length; i++)
+    {
+        UFCEventName[i] = UFCEventName[i].replace(/\n$/, '');        
+    }
+    return UFCEventName;
+}
 
 
 
@@ -490,9 +480,7 @@ function getOddsFunction () {
         
             if (err) { return console.log("Request module to get API DATA failed:" + err); }                             
                         
-        })             )
-
-
+        }))
     })
     
 }
