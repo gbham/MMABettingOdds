@@ -42,7 +42,7 @@ const hbs = expbs.create({
                     await request('https://api.the-odds-api.com/v3/odds?api_key=41ca42613c3990833519f5b8a2b892e8&sport=mma_mixed_martial_arts&region=uk', { json: true }, (err, res, body) => {
                             
                         global.oddsData = body;
-                        console.log("Just assinged global.oddsData");
+                        console.log("Just assinged global.oddsData (fix this - actually check if the request was successful)");
                     
                         if (err) { return console.log("Request module to get API DATA failed:" + err); }                             
                                     
@@ -102,7 +102,7 @@ const hbs = expbs.create({
             catch(err)
             {
                 console.log("Main try/catch in CreateTable() failed")
-                //HERE MAKE A MESSAGE SAYING PLEASE REFRESH THE PAGE OR SOMETHING LIKE THAT
+                //MAKE A MESSAGE SAYING PLEASE REFRESH THE PAGE OR SOMETHING LIKE THAT
             }
                      
         
@@ -137,7 +137,6 @@ const hbs = expbs.create({
         GetWhereToInsertEventHeadings: function() {
             var counter = 0;
             var rowsToInsertHeadings = [];      
-
             
             for(let i = 0; i < global.oddsData.data.length -1 ; i++)  
             {  
@@ -148,15 +147,16 @@ const hbs = expbs.create({
             
                 if(fightTimeB - fightTimeA > twelveHours)
                 {
-                    //Why we need the "+2". For example, When i = 2, then we are actually at the 3rd data point of the oddsData.data[] array
-                    //This means we want (row[6]), so we do i * 2 + 2 = row (e.g. 2 * 2 + 2 = 6) 
-                    rowsToInsertHeadings[counter] = i * 2 + 2;
+                    //Im not actually entirely sure this will always work, might be some edge cases that havent occured yet.
+                    //I think I may just be overthinking it, you have to keep in mind that the headings are added afterwards and the rows have not been reveresed yet
+
+                    //Why we need the "+1". For example, When i = 2, then we are at the 3rd data point of the oddsData.data[] array
+                    //This means we want (row[6]), so we do (i + 1) * 2 = row (e.g. 2 + 1 * 2 = 6)
+                    //The heading is always going to be at an even number in the row[] array (this array only includes the fighters, no headings, they are added afterwards)
+                    rowsToInsertHeadings[counter] = (i + 1) * 2;
                     counter++; 
                 }
             }
-            
-
-            
 
             return rowsToInsertHeadings;
         },
@@ -325,6 +325,7 @@ const hbs = expbs.create({
             
             for(let i=0; i<rows.length; i++)
             {
+                //Make this a case/switch statement
                 if(i < eventOne.length)                
                 {
                     rows[i] = eventOne[i];
@@ -368,7 +369,10 @@ const hbs = expbs.create({
                 for (let i=0; i<rows.length; i++) 
                 {   
                     if(i==rowsToInsertHeadings[counter])
-                    {   
+                    {  
+                        //filler rows to keep the different fight cards seperate
+                        table += "<tr id=FillerRow><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>" 
+                        table += "<tr id=FillerRow><td>x</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>" 
                         table += "<tr id=FightCardHeading><td>" + global.UFCEventNames[eventNumber] + "</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>";
                         counter++;
                         eventNumber++;
@@ -398,8 +402,8 @@ app.set('view engine', 'handlebars');
 app.get('/', async function (req, res) {    //Remember I made this an async function, not sure what else that can affect
 
 
-    // FUCK THE AWAITS, COME BACK TO THIS SHIT. FOCUS ON WEB SCRAPING A LIST OF UFC EVENTS (IN ORDER) THEN APPLY THEM TO THE ROWS WITH HEADINGS ID
-    // ALSO, I BELIEVE ONLY "CREATETABLE()" NEEDS TO BE A HBS.HELPER SINCE THAT IS GETTING CALLED FROM WITHIN INDEX.HANDLEBARS. I think I can make all the other hbs.helper functions,
+    
+    // ONLY "CREATETABLE()" NEEDS TO BE A HBS.HELPER SINCE THAT IS GETTING CALLED FROM WITHIN INDEX.HANDLEBARS. I think I can make all the other hbs.helper functions,
     // just normal functions. this should meen I can keep them in differnt files too and just "Require" them at the top (or something similar) e.g "const express = require('express');""
     // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -413,20 +417,16 @@ app.get('/', async function (req, res) {    //Remember I made this an async func
     getOddsFunction(); // or SendRequest();
     
 
+    //Scraping the event titles functionality needs to be encapsulated in the getOddsFunction(), for when it gets called after the site has been live for a period of time
     const $ = await scrapeWebpageForEventTitles();
-
-
-    // var regExFightNightWithFightersNames = new RegExp(/UFC Fight Night: \w* vs. \w*/, 'g');
-    // var regExUfcOnESPN = new RegExp(/UFC on ESPN: \w* vs. \w*/, 'g');    
-    // var regExPPVWithNames = new RegExp(/UFC \d{3}: \w* vs. \w*/, 'g');       
-    
     const body = $('#Scheduled_events > tbody').text()    
     
     var regExAllUFCEvents = new RegExp(/UFC .*: \w* vs. \w*/, 'g');
     var Events = body.match(regExAllUFCEvents); 
-    Events.reverse(); 
-    
+    Events.reverse();     
     global.UFCEventNames = Events;    
+
+
 
     res.render('index.handlebars', { 
         title: 'Home Page',
@@ -466,7 +466,7 @@ function RemoveNewlineCharacters(UFCEventName) {
 
 
 
-//Unsure what method is better for getting the odds - I have the option of 2 below. From first impressions number 1 seems faster.
+//Unsure what method is better for getting the odds - I have the option of number 1 below. From first impressions number 1 seems faster.
 // 1.
 function getOddsFunction () {
     
@@ -485,7 +485,7 @@ function getOddsFunction () {
     
 }
 
-//Unsure what method is better for getting the odds - I have the option of 2 below. From first impressions number 1 seems faster.
+//Unsure what method is better for getting the odds - I have the option of number 2 below. From first impressions number 1 seems faster.
 // 2.
 
 // async function SendRequest() {                
@@ -513,7 +513,7 @@ function getOddsFunction () {
 
 
 
-
+    //Finally extract these functions to another file
      function LookupOdds(fight, column) { //, teams
            
         //Since the home and away fighters will be alternating between calling this function, I can determine which one is calling through this instead of sending 'teams' in as a paramter to the function

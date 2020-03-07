@@ -38,24 +38,20 @@ tr{
 
 #FightCardHeading{
     background: gray;
+    font-weight: bold;   
 }
 
-/* #FighterRowEven {
-    background: #DCDCDC;
+#FillerRow{
+  
 }
 
 
-#FighterRowOdd {   
-    background: #C0C0C0;   
-
-} */
-
-#row0, #row2, #row4, #row6, #row8, #row10, #row12, #row14, #row16, #row18, #row20, #row22 {    
+#row0, #row2, #row4, #row6, #row8, #row10, #row12, #row14, #row16, #row18, #row20, #row22, #row24, #row26, #row28, #row30, #row32, #row34, #row36, #row38, #row40, #row42, #row44 {    
     background: #C0C0C0;   
 }
 
-/* the rows start at 0  */
-#row1, #row3, #row5, #row7, #row9, #row11, #row13, #row15, #row17, #row19, #row21, #row23 {    
+/* the rows start at 0 (but dont include headings)  */ 
+#row1, #row3, #row5, #row7, #row9, #row11, #row13, #row15, #row17, #row19, #row21, #row23, #row25, #row27, #row29, #row31, #row33, #row35, #row37, #row39, #row41, #row43, #row45 {    
   
     
     background: #DCDCDC;
